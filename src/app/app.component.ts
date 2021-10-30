@@ -145,10 +145,10 @@ export class AppComponent implements OnInit {
         },
         id: 'tw',
         group: 'social',
-        type: 'line',
+        type: 'area',
         height: 160,
       },
-      colors: ['#546E7A'],
+      colors: ['#00E396'],
       yaxis: {
         tickAmount: 2,
         labels: {
@@ -161,14 +161,10 @@ export class AppComponent implements OnInit {
       series: [
         {
           name: 'chart3',
-          data: this.generateDayWiseTimeSeries(
-            new Date('11 Feb 2017').getTime(),
-            20,
-            {
-              min: 10,
-              max: 60,
-            }
-          ),
+          data: lijst.map((item) => ({
+            x: item.createdOn,
+            y: item.averageAge,
+          })),
         },
       ],
       chart: {
@@ -180,7 +176,7 @@ export class AppComponent implements OnInit {
         type: 'area',
         height: 160,
       },
-      colors: ['#00E396'],
+      colors: ['#edbc81'],
       yaxis: {
         tickAmount: 2,
         labels: {
