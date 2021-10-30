@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
 import {
   ApexAxisChartSeries,
   ApexDataLabels,
@@ -10,6 +11,9 @@ import {
   ApexXAxis,
   ApexYAxis,
 } from 'ng-apexcharts';
+import { of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
+
 export type ChartOptions = {
   series: ApexAxisChartSeries;
   chart: any; //ApexChart;
@@ -31,7 +35,10 @@ export type ChartOptions = {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  endpoint =
+    'https://icufunctions.azurewebsites.net/api/analyse/tracking/historical?Grouping=minute&SessionId=WOUTER';
+
   public chart1options: Partial<ChartOptions>;
   public chart2options: Partial<ChartOptions>;
   public chart3options: Partial<ChartOptions>;
@@ -77,26 +84,62 @@ export class AppComponent {
       type: 'datetime',
     },
   };
+  data: Object;
+  averageNeutral: { x: any; y: any }[];
 
-  constructor() {
+  constructor(private httpClient: HttpClient) {
     this.initCharts();
+  }
+  ngOnInit(): void {
+    this.setData();
   }
 
   public initCharts(): void {
+    // data
+    const data = of([]).pipe(
+      map((list: any[]) =>
+        list.map((item) => ({
+          x: item.createdOn,
+          y: item.averageAnger,
+        }))
+      )
+    );
+
     this.chart1options = {
       series: [
         {
-          name: 'chart1',
-          data: this.generateDayWiseTimeSeries(
-            new Date('11 Feb 2017').getTime(),
-            20,
+          name: 'Series 1',
+          data: [
             {
-              min: 10,
-              max: 60,
-            }
-          ),
+              x: '02-10-2017 GMT',
+              y: 34,
+            },
+            {
+              x: '02-11-2017 GMT',
+              y: 43,
+            },
+            {
+              x: '02-12-2017 GMT',
+              y: 31,
+            },
+            {
+              x: '02-13-2017 GMT',
+              y: 43,
+            },
+            {
+              x: '02-14-2017 GMT',
+              y: 33,
+            },
+            {
+              x: '02-15-2017 GMT',
+              y: 52,
+            },
+          ],
         },
       ],
+      xaxis: {
+        type: 'datetime',
+      },
       chart: {
         id: 'fb',
         group: 'social',
@@ -184,5 +227,22 @@ export class AppComponent {
       i++;
     }
     return series;
+  }
+
+  public setData() {
+    const result = this.httpClient
+      .get(this.endpoint)
+      .pipe(
+        tap((x) => console.log(x)),
+        map((list: any[]) =>
+          list.map((item) => ({
+            x: item.createdOn,
+            y: item.averageNeutral,
+          }))
+        )
+      )
+      .subscribe((x) => (this.averageNeutral = x));
+
+    console.log(this.averageNeutral);
   }
 }
