@@ -11,8 +11,8 @@ import {
   ApexXAxis,
   ApexYAxis,
 } from 'ng-apexcharts';
-import { of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { interval } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 export type ChartOptions = {
   series: ApexAxisChartSeries;
@@ -37,7 +37,7 @@ export type ChartOptions = {
 })
 export class AppComponent implements OnInit {
   endpoint =
-    'https://icufunctions.azurewebsites.net/api/analyse/tracking/historical?Grouping=minute&SessionId=WOUTER';
+    'https://icufunctions.azurewebsites.net/api/analyse/tracking/historical?Grouping=minute&SessionId=BrunoMeeting1';
 
   public chart1options: Partial<ChartOptions>;
   public chart2options: Partial<ChartOptions>;
@@ -86,61 +86,35 @@ export class AppComponent implements OnInit {
   };
   data: Object;
   averageNeutral: { x: any; y: any }[];
+  timedSub: any;
 
   constructor(private httpClient: HttpClient) {
-    this.initCharts();
+    // this.initCharts();
   }
   ngOnInit(): void {
     this.setData();
   }
 
-  public initCharts(): void {
+  public initCharts(lijst: any): void {
     // data
-    const data = of([]).pipe(
-      map((list: any[]) =>
-        list.map((item) => ({
-          x: item.createdOn,
-          y: item.averageAnger,
-        }))
-      )
-    );
 
     this.chart1options = {
       series: [
         {
           name: 'Series 1',
-          data: [
-            {
-              x: '02-10-2017 GMT',
-              y: 34,
-            },
-            {
-              x: '02-11-2017 GMT',
-              y: 43,
-            },
-            {
-              x: '02-12-2017 GMT',
-              y: 31,
-            },
-            {
-              x: '02-13-2017 GMT',
-              y: 43,
-            },
-            {
-              x: '02-14-2017 GMT',
-              y: 33,
-            },
-            {
-              x: '02-15-2017 GMT',
-              y: 52,
-            },
-          ],
+          data: lijst.map((item) => ({
+            x: item.createdOn,
+            y: item.totalPeople,
+          })),
         },
       ],
       xaxis: {
         type: 'datetime',
       },
       chart: {
+        animations: {
+          enabled: false,
+        },
         id: 'fb',
         group: 'social',
         type: 'line',
@@ -159,17 +133,16 @@ export class AppComponent implements OnInit {
       series: [
         {
           name: 'chart2',
-          data: this.generateDayWiseTimeSeries(
-            new Date('11 Feb 2017').getTime(),
-            20,
-            {
-              min: 10,
-              max: 30,
-            }
-          ),
+          data: lijst.map((item) => ({
+            x: item.createdOn,
+            y: item.averageSurprise,
+          })),
         },
       ],
       chart: {
+        animations: {
+          enabled: false,
+        },
         id: 'tw',
         group: 'social',
         type: 'line',
@@ -199,6 +172,9 @@ export class AppComponent implements OnInit {
         },
       ],
       chart: {
+        animations: {
+          enabled: false,
+        },
         id: 'yt',
         group: 'social',
         type: 'area',
@@ -230,19 +206,12 @@ export class AppComponent implements OnInit {
   }
 
   public setData() {
-    const result = this.httpClient
-      .get(this.endpoint)
-      .pipe(
-        tap((x) => console.log(x)),
-        map((list: any[]) =>
-          list.map((item) => ({
-            x: item.createdOn,
-            y: item.averageNeutral,
-          }))
-        )
-      )
-      .subscribe((x) => (this.averageNeutral = x));
+    const result = this.httpClient.get(this.endpoint);
 
-    console.log(this.averageNeutral);
+    this.timedSub = interval(10000)
+      .pipe(switchMap((_) => result))
+      .subscribe((x) => {
+        this.initCharts(x);
+      });
   }
 }
